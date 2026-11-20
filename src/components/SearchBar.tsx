@@ -64,7 +64,7 @@ export function SearchBar({ onIpDataChange }: SearchBarProps) {
       <div className="flex rounded-lg overflow-hidden border border-input">
         <Input 
           type="text" 
-          placeholder="IPV4 / IPV6 / Domain" 
+          placeholder="IPV4 / IPV6 " 
           className="w-full px-4 py-2 focus:outline-none border-0 focus:ring-0 rounded-none"
           value={inputValue}
           onChange={(e) => setInputValue(e.target.value)}
