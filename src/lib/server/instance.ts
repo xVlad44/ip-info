@@ -5,6 +5,7 @@
  * Environment (all optional):
  *   IP_PROVIDERS         provider order, default "freeipapi,ipapi"
  *   PROVIDER_TIMEOUT_MS  per-provider request timeout, default 2500
+ *   RDNS_TIMEOUT_MS      reverse DNS timeout, default 1500
  *   TRUST_PROXY          loopback | always | never, default loopback (see client-ip.ts)
  */
 import type { ProviderName } from '@/lib/ip/types';
@@ -15,6 +16,7 @@ import { createFreeIpApiProvider } from './providers/freeipapi';
 import { createIpApiProvider } from './providers/ipapi';
 import type { GeoProvider } from './providers/types';
 import { RateLimiter } from './rate-limit';
+import { createReverseDns } from './rdns';
 
 export interface AppServices {
   service: LookupService;
@@ -55,6 +57,7 @@ function build(): AppServices {
     providers: buildProviders(),
     cache: new TtlLru<string, CachedLookup>(LIMITS.cache),
     upstreamLimiter: new RateLimiter(LIMITS.upstream),
+    reverseDns: createReverseDns({ timeoutMs: envInt('RDNS_TIMEOUT_MS', 1500) }),
     onProviderError: (err) => console.warn(`[lookup] provider failed: ${err.provider} ${err.kind}`),
   });
   return {
