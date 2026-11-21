@@ -1,45 +1,20 @@
-import { Button } from '@/components/ui/button';
-import { 
-  User,
-  FileSearch,
-  HardDriveDownload,
-} from 'lucide-react';
-
-import Link from 'next/link';
-
+import { Suspense } from 'react';
+import { ResultSkeleton } from '@/components/result-skeleton';
+import { SearchBar } from '@/components/SearchBar';
+import { SelfReadout } from '@/components/self-readout';
+import { TerminalTip } from '@/components/terminal-tip';
 
 export default function Home() {
-  const tools = [
-    { id: 'my-ip', name: 'My IP Info', icon: User },
-    { id: 'ip-lookup', name: 'IP Lookup', icon: FileSearch },
-    { id: 'cloudflare-checker', name: 'Cloudflare Checker', icon: HardDriveDownload }
-  ];
-
   return (
-
-          
-          <div className="flex flex-col space-y-6">
-            <div className="p-4">
-              <h2 className="text-4xl font-bold mb-6">IP Tools</h2>
-              <div className="flex flex-col space-y-4">
-                {tools.map(tool => (
-                  <Button 
-                    key={tool.id}
-                    variant="ghost" 
-                    className="flex items-center justify-start space-x-3 text-lg hover:text-sky-500 transition-colors"
-                    asChild
-                  >
-                    <Link href={`/tools/${tool.id}`}>
-                      <tool.icon className="w-5 h-5" />
-                      <span>{tool.name}</span>
-                    </Link>
-                  </Button>
-                ))}
-             
-            </div>
-          </div>
-        </div>
-
-    
+    <div className="flex flex-col gap-10">
+      <h1 className="sr-only">What is my IP address?</h1>
+      <Suspense fallback={<ResultSkeleton label="Finding your address…" />}>
+        <SelfReadout />
+      </Suspense>
+      <div className="grid gap-10 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)] lg:gap-12">
+        <SearchBar label="Look up another address" />
+        <TerminalTip />
+      </div>
+    </div>
   );
 }

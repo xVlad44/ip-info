@@ -4,67 +4,56 @@ import { useEffect, useRef } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
-// Fix Leaflet's default icon issue
-const icon = L.icon({
-  iconUrl: '/images/marker-icon.png',
-  shadowUrl: '/images/marker-shadow.png',
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
-  shadowSize: [41, 41]
-});
+interface MapProps {
+  lat: number;
+  lon: number;
+  /** Accessible description of what the map shows. */
+  label: string;
+}
 
-function MapComponent({ lat, lon, city, country }: { lat: number; lon: number; city: string; country: string }) {
-  const mapRef = useRef<L.Map | null>(null);
-  const mapContainerRef = useRef<HTMLDivElement>(null);
+/**
+ * Leaflet map pinned at the provider's coordinates. Zoom 10 on purpose:
+ * IP geolocation is city-level at best, and a street-level view would claim
+ * a precision the data does not have.
+ */
+function MapComponent({ lat, lon, label }: MapProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    // Make sure we're in the browser environment
-    if (typeof window !== 'undefined') {
-      // Set default icon for all markers
-      L.Marker.prototype.options.icon = icon;
-      
-      // Create map if it doesn't exist yet
-      if (!mapRef.current && mapContainerRef.current) {
-        mapRef.current = L.map(mapContainerRef.current).setView([lat, lon], 13);
-        
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-        }).addTo(mapRef.current);
-        
-        L.marker([lat, lon])
-          .addTo(mapRef.current)
-          .bindPopup(`<b>${city}</b><br>${country}`)
-          .openPopup();
-      } else if (mapRef.current) {
-        // Update map view if it already exists
-        mapRef.current.setView([lat, lon], 13);
-        
-        // Clear existing markers
-        mapRef.current.eachLayer(layer => {
-          if (layer instanceof L.Marker) {
-            mapRef.current?.removeLayer(layer);
-          }
-        });
-        
-        // Add new marker
-        L.marker([lat, lon])
-          .addTo(mapRef.current)
-          .bindPopup(`<b>${city}</b><br>${country}`)
-          .openPopup();
-      }
-    }
-    
-    // Cleanup function
-    return () => {
-      if (mapRef.current) {
-        mapRef.current.remove();
-        mapRef.current = null;
-      }
-    };
-  }, [lat, lon, city, country]);
+    const el = containerRef.current;
+    if (!el) return;
 
-  return <div ref={mapContainerRef} className="h-full w-full" />;
+    const map = L.map(el, {
+      center: [lat, lon],
+      zoom: 10,
+      scrollWheelZoom: false, // never hijack page scrolling
+      dragging: !L.Browser.mobile, // one-finger drags scroll the page on phones
+      attributionControl: true,
+    });
+    map.attributionControl.setPrefix(false);
+
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 13,
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+    }).addTo(map);
+
+    L.marker([lat, lon], {
+      icon: L.divIcon({ className: 'ip-marker', iconSize: [28, 28], iconAnchor: [14, 14] }),
+      keyboard: false,
+      interactive: false,
+    }).addTo(map);
+
+    // The container can change size with the layout (fonts, breakpoints).
+    const ro = new ResizeObserver(() => map.invalidateSize());
+    ro.observe(el);
+
+    return () => {
+      ro.disconnect();
+      map.remove();
+    };
+  }, [lat, lon]);
+
+  return <div ref={containerRef} role="img" aria-label={label} className="absolute inset-0" />;
 }
 
 export default MapComponent;

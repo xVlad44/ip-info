@@ -1,91 +1,129 @@
 'use client';
 
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Search } from 'lucide-react';
-import { useState } from 'react';
-import axios from 'axios';
+import { ArrowRight, LoaderCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { useId, useState, useTransition } from 'react';
+import { parseIp } from '@/lib/ip/parse';
 
-type SearchBarProps = {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  onIpDataChange: (data: any) => void;
+const EXAMPLES = ['1.1.1.1', '2606:4700:4700::1111', '192.168.1.1'];
+
+interface SearchBarProps {
+  defaultValue?: string;
+  label?: string;
+  autoFocus?: boolean;
+  showExamples?: boolean;
 }
 
-export function SearchBar({ onIpDataChange }: SearchBarProps) {
+/**
+ * Validates with the same parser the API uses, so bad input never costs a
+ * request. Works without JavaScript too: the form GETs /tools/ip-lookup?ip=,
+ * which redirects to the lookup page.
+ */
+export function SearchBar({ defaultValue = '', label = 'Look up an IP address', autoFocus = false, showExamples = true }: SearchBarProps) {
   const router = useRouter();
-  const [inputValue, setInputValue] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState(null);
+  const id = useId();
+  const [value, setValue] = useState(defaultValue);
+  const [error, setError] = useState<string | null>(null);
+  const [pending, startTransition] = useTransition();
 
-  const handleSearch = async () => {
-    if (!inputValue.trim()) return;
-    
-    setIsLoading(true);
-    setError(null);
-    
-    try {
-      // Determine if input is IPv4, IPv6, or domain
-      let endpoint = inputValue;
-      
-      // If it's "me" or empty, use the user's IP
-      if (inputValue === "me" || inputValue === "") {
-        endpoint = "";
-      }
-      
-      const response = await axios.get(`https://ipapi.co/${endpoint}/json/`);
-      const data = response.data;
-      
-      if (data.error) {
-        setError(data.reason || "Invalid IP or domain");
-        onIpDataChange(null);
-      } else {
-        console.log(data);
-        onIpDataChange(data);
-        
-        // Store data in sessionStorage for persistence between pages
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        sessionStorage.setItem('ipLookupData', JSON.stringify(data));
-        
-        // Redirect to ip-lookup page
-        router.push(`/tools/ip-lookup?ip=${encodeURIComponent(endpoint || data.ip)}`);
-      }
-    } catch (err:any) {
-      setError(err.response?.data?.reason || "Failed to fetch IP data");
-      onIpDataChange(null);
-    } finally {
-      setIsLoading(false);
-      setInputValue('');
+  function go(raw: string) {
+    const input = raw.trim();
+    if (input === '') {
+      setError('Enter an IPv4 or IPv6 address.');
+      return;
     }
-  };
+    if (input.toLowerCase() === 'me') {
+      setError(null);
+      startTransition(() => router.push('/tools/my-ip'));
+      return;
+    }
+    const parsed = parseIp(input);
+    if (!parsed) {
+      const shown = input.length > 48 ? `${input.slice(0, 45)}…` : input;
+      setError(`“${shown}” isn’t an IPv4 or IPv6 address. Example: 8.8.8.8 or 2001:4860:4860::8888.`);
+      return;
+    }
+    setError(null);
+    startTransition(() => router.push(`/lookup/${parsed.canonical}`));
+  }
+
+  const errorId = `${id}-error`;
+  const hintId = `${id}-hint`;
 
   return (
-    <div className="p-4">
-      <div className="flex rounded-lg overflow-hidden border border-input">
-        <Input 
-          type="text" 
-          placeholder="IPV4 / IPV6 " 
-          className="w-full px-4 py-2 focus:outline-none border-0 focus:ring-0 rounded-none"
-          value={inputValue}
-          onChange={(e) => setInputValue(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+    <form
+      role="search"
+      action="/tools/ip-lookup"
+      method="get"
+      noValidate
+      onSubmit={(e) => {
+        e.preventDefault();
+        go(value);
+      }}
+    >
+      <label htmlFor={id} className="eyebrow mb-2 block">
+        {label}
+      </label>
+      <div className="flex gap-2">
+        <input
+          id={id}
+          name="ip"
+          type="text"
+          inputMode="text"
+          autoComplete="off"
+          autoCapitalize="none"
+          autoCorrect="off"
+          spellCheck={false}
+          autoFocus={autoFocus}
+          value={value}
+          onChange={(e) => {
+            setValue(e.target.value);
+            if (error) setError(null);
+          }}
+          placeholder="8.8.8.8 or 2001:4860:4860::8888"
+          aria-invalid={error ? true : undefined}
+          aria-describedby={error ? errorId : showExamples ? hintId : undefined}
+          className="h-12 min-w-0 flex-1 rounded-md border border-input bg-card px-3.5 font-mono text-[15px] text-foreground placeholder:text-muted-foreground focus-visible:border-ring aria-invalid:border-danger"
         />
-        <Button 
-          variant="ghost" 
-          className="rounded-none border-0 hover:bg-muted hover:text-sky-500"
-          onClick={handleSearch}
-          disabled={isLoading}
+        <button
+          type="submit"
+          disabled={pending}
+          className="inline-flex h-12 shrink-0 items-center gap-2 rounded-md bg-gold px-4 font-medium text-on-gold transition-colors hover:bg-[#f2c674] disabled:cursor-progress disabled:opacity-80 sm:px-5"
         >
-          {isLoading ? (
-            <div className="h-4 w-4 animate-spin rounded-full border-2 border-sky-500 border-t-transparent" />
+          {pending ? (
+            <LoaderCircle className="size-4 animate-spin" aria-hidden="true" />
           ) : (
-            <Search className="w-4 h-4" />
+            <ArrowRight className="size-4" aria-hidden="true" />
           )}
-        </Button>
+          <span>{pending ? 'Looking up…' : 'Look up'}</span>
+        </button>
       </div>
-      {error && (
-        <div className="mt-2 text-red-500 text-sm">{error}</div>
-      )}
-    </div>
+      <div className="mt-2 min-h-6 text-sm" aria-live="polite">
+        {error ? (
+          <p id={errorId} className="text-danger">
+            {error}
+          </p>
+        ) : showExamples ? (
+          <p id={hintId} className="flex flex-wrap items-center gap-x-1 text-muted-foreground">
+            <span>Try</span>
+            {EXAMPLES.map((ex, i) => (
+              <span key={ex} className="inline-flex items-center">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setValue(ex);
+                    go(ex);
+                  }}
+                  className="min-h-8 rounded-sm px-1 font-mono text-[13px] text-gold-ink underline decoration-line-strong underline-offset-4 hover:decoration-gold"
+                >
+                  {ex}
+                </button>
+                {i < EXAMPLES.length - 1 && <span aria-hidden="true">·</span>}
+              </span>
+            ))}
+          </p>
+        ) : null}
+      </div>
+    </form>
   );
 }
