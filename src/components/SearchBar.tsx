@@ -80,7 +80,7 @@ export function SearchBar({ defaultValue = '', label = 'Look up an IP address', 
             setValue(e.target.value);
             if (error) setError(null);
           }}
-          placeholder="8.8.8.8 or 2001:4860:4860::8888"
+          placeholder="8.8.8.8 or 2001:db8::1"
           aria-invalid={error ? true : undefined}
           aria-describedby={error ? errorId : showExamples ? hintId : undefined}
           className="h-12 min-w-0 flex-1 rounded-md border border-input bg-card px-3.5 font-mono text-[15px] text-foreground placeholder:text-muted-foreground focus-visible:border-ring aria-invalid:border-danger"

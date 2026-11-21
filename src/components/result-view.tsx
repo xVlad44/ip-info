@@ -13,8 +13,8 @@ const PROVIDER_LABEL: Record<LookupResult['source']['provider'], string> = {
 
 function Fact({ label, children, copy }: { label: string; children: React.ReactNode; copy?: { value: string; label: string } }) {
   return (
-    <div className="grid grid-cols-[7.5rem_1fr_auto] items-center gap-x-3 border-t border-border py-2.5 first:border-t-0 sm:grid-cols-[9rem_1fr_auto]">
-      <dt className="eyebrow">{label}</dt>
+    <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-0.5 border-t border-border py-2.5 first:border-t-0 sm:grid-cols-[9rem_minmax(0,1fr)_auto]">
+      <dt className="eyebrow col-span-2 sm:col-span-1">{label}</dt>
       <dd className="min-w-0 break-words">{children}</dd>
       <div className="-my-1 flex w-10 justify-end">{copy && <CopyButton value={copy.value} label={copy.label} />}</div>
     </div>
@@ -119,7 +119,15 @@ export function ResultView({ result, kind }: { result: LookupResult; kind: 'self
           </p>
           {range && (
             <p className="mt-4 font-mono text-[13px] text-muted-foreground">
-              {range.cidr} · {range.rfc}
+              Defined in{' '}
+              <a
+                href={`https://www.rfc-editor.org/rfc/${range.rfc.replace(/\s+/g, '').toLowerCase()}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-gold-ink underline decoration-line-strong underline-offset-4 hover:decoration-gold"
+              >
+                {range.rfc}
+              </a>
             </p>
           )}
         </div>

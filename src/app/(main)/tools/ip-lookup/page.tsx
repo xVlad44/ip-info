@@ -31,11 +31,15 @@ export default async function IpLookupPage({ searchParams }: Props) {
           recognised on the server and answered without asking a provider.
         </p>
       </header>
-      <SearchBar defaultValue={query} />
+      <div className="max-w-2xl">
+        <SearchBar defaultValue={query} />
+      </div>
       {query ? (
-        <StatePanel code="invalid_ip" message="The address could not be parsed." input={query} />
+        <div className="max-w-2xl">
+          <StatePanel code="invalid_ip" message="The address could not be parsed." input={query} />
+        </div>
       ) : (
-        <div className="flex flex-col items-start gap-3 rounded-xl border border-dashed border-line-strong p-6 sm:flex-row sm:items-center sm:p-8">
+        <div className="flex max-w-2xl flex-col items-start gap-3 rounded-xl border border-dashed border-line-strong p-6 sm:flex-row sm:items-center sm:p-8">
           <Mark className="size-8 shrink-0 text-gold-ink" />
           <div>
             <p className="font-medium">No address yet</p>

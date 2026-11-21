@@ -56,7 +56,9 @@ export default async function LookupPage({ params }: Props) {
       <div className="flex flex-col gap-8">
         <h1 className="sr-only">IP lookup</h1>
         <StatePanel code="invalid_ip" message="This link does not contain a valid IPv4 or IPv6 address." input={input} />
-        <SearchBar label="Look up an address" />
+        <div className="max-w-2xl">
+          <SearchBar label="Look up an address" />
+        </div>
       </div>
     );
   }
@@ -80,7 +82,9 @@ export default async function LookupPage({ params }: Props) {
           input={canonical}
         />
       )}
-      <SearchBar label="Look up another address" showExamples={false} />
+      <div className="max-w-2xl">
+        <SearchBar label="Look up another address" showExamples={false} />
+      </div>
     </div>
   );
 }
