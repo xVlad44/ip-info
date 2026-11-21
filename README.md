@@ -66,7 +66,7 @@ Errors share one body, `{"error": {"code", "message", "retryAfter"?}}`:
 | 500 | `client_ip_unknown` | `/api/me` could not determine the caller |
 
 The UI maps the same codes to its states (invalid input, rate limited with a countdown hint,
-providers down with a retry button). Every response carries `RateLimit-Limit`,
+providers down with a retry button). Every API response carries `RateLimit-Limit`,
 `RateLimit-Remaining` and `RateLimit-Reset`.
 
 ## Trust model for client IP headers
