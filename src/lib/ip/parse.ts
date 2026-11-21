@@ -97,8 +97,14 @@ export function formatIpv4(bytes: Uint8Array): string {
   return Array.from(bytes.subarray(0, 4)).join('.');
 }
 
-/** RFC 5952: lowercase, no leading zeros, the longest run (>= 2) of zero groups as "::". */
+/**
+ * RFC 5952: lowercase, no leading zeros, the longest run (>= 2) of zero groups
+ * as "::", and IPv4-mapped addresses in mixed notation (::ffff:192.0.2.1, §5).
+ */
 export function formatIpv6(bytes: Uint8Array): string {
+  if (bytes.subarray(0, 10).every((b) => b === 0) && bytes[10] === 0xff && bytes[11] === 0xff) {
+    return `::ffff:${formatIpv4(bytes.subarray(12, 16))}`;
+  }
   const groups: number[] = [];
   for (let i = 0; i < 16; i += 2) groups.push((bytes[i] << 8) | bytes[i + 1]);
 
